@@ -9,7 +9,8 @@ and prints the ASCII output in the terminal.
 - Python 3
 - Pillow
 
-`run.sh` checks for Pillow and installs it automatically if it is missing.
+`run.sh` creates a project-local `.venv` and installs Pillow there if it is
+missing. It does not install packages into the system Python environment.
 
 ## Usage
 
@@ -21,6 +22,12 @@ Use a custom output width:
 
 ```sh
 ./run.sh 160
+```
+
+Show CLI help:
+
+```sh
+./run.sh --help
 ```
 
 The width is measured in terminal characters. Larger widths preserve more image

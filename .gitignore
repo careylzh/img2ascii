@@ -1,4 +1,6 @@
 *.png
 *.PNG
+.venv/
 __pycache__/
 *.pyc
+*.txt

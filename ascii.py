@@ -1,5 +1,6 @@
 from pathlib import Path
 from PIL import Image
+import argparse
 import sys
 from time import sleep
 
@@ -65,8 +66,13 @@ def image_to_ascii(image_path, width=120):
     return full_output
 
 
-def save_ascii_file(image_path, ascii_output):
-    output_file = image_path.with_suffix(".txt")
+def ascii_output_path(image_path, width):
+    output_name = f"{image_path.stem[:14]}-{width}.txt"
+    return image_path.with_name(output_name)
+
+
+def save_ascii_file(image_path, ascii_output, width):
+    output_file = ascii_output_path(image_path, width)
     with open(output_file, "w", encoding="utf-8") as f:
         f.write(ascii_output)
 
@@ -83,9 +89,25 @@ def iter_repo_images(repo_dir):
     )
 
 
-def main():
+def parse_args(argv):
+    parser = argparse.ArgumentParser(
+        description="Convert supported images in this repo to ASCII art."
+    )
+    parser.add_argument(
+        "width",
+        nargs="?",
+        type=int,
+        default=120,
+        help="output width in terminal characters (default: 120)",
+    )
+    return parser.parse_args(argv)
+
+
+def main(argv=None):
+    args = parse_args(sys.argv[1:] if argv is None else argv)
+
     repo_dir = Path(__file__).resolve().parent
-    width = int(sys.argv[1]) if len(sys.argv) > 1 else 120
+    width = args.width
 
     image_files = iter_repo_images(repo_dir)
 
@@ -100,7 +122,7 @@ def main():
         if ascii_output is None:
             continue
 
-        save_ascii_file(image_file, ascii_output)
+        save_ascii_file(image_file, ascii_output, width)
         print()
         print(ascii_output)
 
