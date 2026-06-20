@@ -86,6 +86,17 @@ class ServerTests(unittest.TestCase):
         handler.send_error.assert_not_called()
         convert.assert_called_once_with("https://example.com/sample.jpg", 120)
 
+    def test_capabilities_advertise_url_conversion(self) -> None:
+        handler = object.__new__(VisualizerHandler)
+        handler.path = "/api/capabilities"
+        handler.send_json = Mock()
+        handler.send_error = Mock()
+
+        handler.do_GET()
+
+        handler.send_json.assert_called_once_with({"urlConversion": True})
+        handler.send_error.assert_not_called()
+
 
 if __name__ == "__main__":
     unittest.main()

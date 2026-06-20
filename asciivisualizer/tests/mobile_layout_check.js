@@ -27,7 +27,17 @@ async function runTarget(name, browserType) {
     if (message.type() === "error") consoleErrors.push(message.text());
   });
 
-  await page.goto(APP_URL, { waitUntil: "networkidle" });
+  const staticPage = await context.newPage();
+  await staticPage.route("**/api/capabilities", async (route) => {
+    await route.fulfill({ status: 404, body: "Not found" });
+  });
+  await staticPage.goto(APP_URL, { waitUntil: "networkidle" });
+  const staticConverterHidden = await staticPage.locator("#converterTabButton").evaluate((button) => button.hidden);
+  await staticPage.close();
+
+  await page.route("**/api/capabilities", async (route) => {
+    await route.fulfill({ contentType: "application/json", body: JSON.stringify({ urlConversion: true }) });
+  });
   await page.route("**/api/convert-url", async (route) => {
     await route.fulfill({
       contentType: "application/json",
@@ -41,6 +51,8 @@ async function runTarget(name, browserType) {
       }),
     });
   });
+  await page.goto(APP_URL, { waitUntil: "networkidle" });
+  await page.waitForFunction(() => document.querySelector("#converterTabButton").hidden === false);
   await page.click("#converterTabButton");
   await page.fill("#imageUrlInput", "https://example.com/mobile.png");
   await page.click("#convertButton");
@@ -218,6 +230,7 @@ async function runTarget(name, browserType) {
 
   const tolerance = 1;
   const failures = [];
+  if (!staticConverterHidden) failures.push("converter tab was exposed without backend capability");
   if (single.bodyOverflow > tolerance || single.wrapOverflow > tolerance || single.contentOverflow > tolerance) {
     failures.push(`single overflow ${JSON.stringify(single)}`);
   }

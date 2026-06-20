@@ -109,6 +109,9 @@ class VisualizerHandler(BaseHTTPRequestHandler):
     def do_GET(self) -> None:
         parsed = urlparse(self.path)
         try:
+            if parsed.path == "/api/capabilities":
+                self.send_json({"urlConversion": True})
+                return
             if parsed.path == "/api/files":
                 self.send_json({"root": str(self.config.root), "files": list_ascii_files(self.config.root)})
                 return

@@ -24,6 +24,17 @@ const converterElements = {
 
 let convertedFile = null;
 
+async function enableSupportedFeatures() {
+  try {
+    const response = await fetch("/api/capabilities", { cache: "no-store" });
+    if (!response.ok) return;
+    const capabilities = await response.json();
+    if (capabilities.urlConversion === true) converterElements.converterTabButton.hidden = false;
+  } catch {
+    // Static deployments intentionally keep backend-only features hidden.
+  }
+}
+
 function selectAppTab(tab) {
   const converterActive = tab === "converter";
   converterElements.viewerTab.hidden = converterActive;
@@ -129,3 +140,4 @@ converterElements.invertToggle.addEventListener("change", applyConverterSettings
 converterElements.form.addEventListener("submit", convertImageUrl);
 converterElements.downloadButton.addEventListener("click", downloadConversion);
 window.addEventListener("resize", applyConverterSettings);
+enableSupportedFeatures();
