@@ -1,0 +1,9 @@
+[project]
+name = "asciivisualizer"
+version = "0.1.0"
+description = "Local web-based visualizer for ASCII art text files."
+requires-python = ">=3.10"
+readme = "README.md"
+
+[project.scripts]
+asciivisualizer = "asciivisualizer.server:main"

@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>ASCII Visualizer</title>
+    <link rel="stylesheet" href="/static/styles.css">
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <header class="brand">
+          <div>
+            <h1>ASCII Visualizer</h1>
+            <p id="rootPath">Loading folder...</p>
+          </div>
+          <button id="refreshButton" class="icon-button" title="Refresh file list" aria-label="Refresh file list">
+            <span aria-hidden="true">↻</span>
+          </button>
+        </header>
+
+        <form id="folderForm" class="folder-form">
+          <label for="folderInput">Folder path</label>
+          <div class="folder-row">
+            <input id="folderInput" type="text" placeholder="/path/to/ascii-folder" autocomplete="off">
+            <button id="browseFolderButton" class="text-button" type="button">Browse</button>
+            <button id="loadFolderButton" class="text-button" type="submit">Load</button>
+          </div>
+          <input id="directoryInput" class="visually-hidden" type="file" webkitdirectory directory multiple>
+          <p id="folderStatus" role="status"></p>
+        </form>
+
+        <div class="search-row">
+          <input id="searchInput" type="search" placeholder="Filter loaded files" autocomplete="off">
+        </div>
+
+        <div class="list-meta">
+          <span id="fileCount">0 files</span>
+          <select id="sortSelect" aria-label="Sort files">
+            <option value="name">Name</option>
+            <option value="modified">Modified</option>
+            <option value="size">Size</option>
+            <option value="dimensions">Dimensions</option>
+          </select>
+        </div>
+
+        <nav id="fileList" class="file-list" aria-label="ASCII files"></nav>
+      </aside>
+
+      <main class="viewer-pane">
+        <div class="toolbar">
+          <button id="panelToggleButton" class="icon-button" type="button" title="Hide file panel" aria-label="Hide file panel" aria-pressed="false">
+            <span aria-hidden="true">☰</span>
+          </button>
+
+          <div class="file-heading">
+            <h2 id="activeName">No file selected</h2>
+            <p id="activeMeta">Choose a text file from the folder.</p>
+          </div>
+
+          <div class="controls">
+            <label>
+              Font
+              <input id="fontSizeInput" type="range" min="6" max="28" value="11">
+            </label>
+            <label>
+              Line
+              <input id="lineHeightInput" type="range" min="70" max="160" value="100">
+            </label>
+            <label class="check-control">
+              <input id="fitToggle" type="checkbox" checked>
+              Fit
+            </label>
+            <label class="check-control">
+              <input id="wrapToggle" type="checkbox">
+              Wrap
+            </label>
+            <label class="check-control">
+              <input id="invertToggle" type="checkbox">
+              Invert
+            </label>
+          </div>
+        </div>
+
+        <div id="floatingFileName" class="floating-file-name">No file selected</div>
+
+        <section class="canvas-wrap" id="canvasWrap">
+          <pre id="asciiCanvas" aria-live="polite">Select a .txt file to visualize it here.</pre>
+        </section>
+
+        <div class="floating-nav" aria-label="File navigation">
+          <button id="prevButton" class="nav-button" type="button">Previous</button>
+          <button id="nextButton" class="nav-button" type="button">Next</button>
+        </div>
+      </main>
+    </div>
+
+    <script src="/static/app.js"></script>
+  </body>
+</html>
