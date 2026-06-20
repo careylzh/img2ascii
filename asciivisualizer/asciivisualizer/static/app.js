@@ -12,6 +12,8 @@ const state = {
   lineHeight: 100,
 };
 
+const DEFAULT_FONT_SIZE = 11;
+
 const elements = {
   rootPath: document.querySelector("#rootPath"),
   refreshButton: document.querySelector("#refreshButton"),
@@ -502,7 +504,7 @@ async function fillPageItem(item, pre, file, token) {
 }
 
 function fitPageItemText(pre, file) {
-  fitTextToWidth(pre, 8);
+  fitTextToWidth(pre, 8, 0, state.fontSize / DEFAULT_FONT_SIZE);
 }
 
 function thumbnailText(text, pre, fontSize) {
@@ -552,7 +554,7 @@ function layoutPagePlaceholders() {
     const characterWidth = fontSize * 0.602;
     const contentWidth = Math.max(1, file.columns * characterWidth);
     const availableWidth = Math.max(1, stage.clientWidth);
-    const scale = Math.min(1, availableWidth / contentWidth);
+    const scale = Math.min(1, availableWidth / contentWidth) * (state.fontSize / DEFAULT_FONT_SIZE);
     stage.style.height = `${Math.max(1, Math.ceil(file.rows * lineHeight * scale))}px`;
   }
 }
@@ -567,7 +569,8 @@ function moveSelection(direction) {
 function applyCanvasSettings() {
   state.fontSize = Number(elements.fontSizeInput.value);
   state.lineHeight = Number(elements.lineHeightInput.value);
-  elements.asciiCanvas.style.fontSize = `${state.fontSize}px`;
+  const fitted = elements.fitToggle.checked && !elements.wrapToggle.checked;
+  elements.asciiCanvas.style.fontSize = `${fitted ? DEFAULT_FONT_SIZE : state.fontSize}px`;
   elements.asciiCanvas.style.lineHeight = `${state.lineHeight / 100}`;
   document.body.classList.toggle("wrap-enabled", elements.wrapToggle.checked);
   document.body.classList.toggle("inverted", elements.invertToggle.checked);
@@ -582,12 +585,12 @@ function applyCanvasSettings() {
 
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
-      fitTextToWidth(elements.asciiCanvas, state.fontSize, 40);
+      fitTextToWidth(elements.asciiCanvas, DEFAULT_FONT_SIZE, 40, state.fontSize / DEFAULT_FONT_SIZE);
     });
   });
 }
 
-function fitTextToWidth(pre, baseFontSize, horizontalPadding = 0) {
+function fitTextToWidth(pre, baseFontSize, horizontalPadding = 0, zoom = 1) {
   const stage = pre.parentElement;
   pre.style.transform = "none";
   pre.style.transformOrigin = "top left";
@@ -595,10 +598,11 @@ function fitTextToWidth(pre, baseFontSize, horizontalPadding = 0) {
   pre.style.fontSize = `${baseFontSize}px`;
   const availableWidth = Math.max(1, stage.clientWidth - horizontalPadding);
   const contentWidth = Math.max(1, pre.scrollWidth - horizontalPadding);
-  const scale = Math.min(1, availableWidth / contentWidth);
+  const fittedScale = Math.min(1, availableWidth / contentWidth);
+  const scale = fittedScale * zoom;
   pre.style.transform = `scale(${scale})`;
   stage.style.height = `${Math.ceil(pre.scrollHeight * scale)}px`;
-  stage.style.overflow = "hidden";
+  stage.style.overflow = scale > fittedScale ? "visible" : "hidden";
 }
 
 function toggleFilePanel() {
@@ -649,7 +653,11 @@ elements.searchInput.addEventListener("input", applyFilters);
 elements.sortSelect.addEventListener("change", applyFilters);
 elements.prevButton.addEventListener("click", () => moveSelection(-1));
 elements.nextButton.addEventListener("click", () => moveSelection(1));
-elements.fontSizeInput.addEventListener("input", applyCanvasSettings);
+elements.fontSizeInput.addEventListener("input", () => {
+  applyCanvasSettings();
+  fitVisiblePageItems();
+  layoutPagePlaceholders();
+});
 elements.lineHeightInput.addEventListener("input", applyCanvasSettings);
 elements.fitToggle.addEventListener("change", applyCanvasSettings);
 elements.wrapToggle.addEventListener("change", applyCanvasSettings);

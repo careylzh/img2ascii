@@ -71,6 +71,17 @@ async function runTarget(name, browserType) {
       toolbarBottom: toolbar.getBoundingClientRect().bottom,
     };
   });
+  await page.locator("#fontSizeInput").evaluate((input) => {
+    input.value = "22";
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+  });
+  await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+  const singleZoomedWidth = await page.locator("#asciiCanvas").evaluate((canvas) => canvas.getBoundingClientRect().width);
+  await page.locator("#fontSizeInput").evaluate((input) => {
+    input.value = "11";
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+  });
+  await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
   await page.screenshot({ path: `/private/tmp/asciivisualizer-${name}-single-mobile.png`, fullPage: false });
 
   await page.click("#pageToggleButton");
@@ -112,6 +123,18 @@ async function runTarget(name, browserType) {
       renderedCharacters: loaded.reduce((total, pre) => total + pre.textContent.length, 0),
     };
   });
+  await page.locator("#fontSizeInput").evaluate((input) => {
+    input.value = "6";
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+  });
+  await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(resolve)));
+  const continuousZoomedWidth = await page.locator(".page-item[data-loaded='true'] pre").first()
+    .evaluate((pre) => pre.getBoundingClientRect().width);
+  await page.locator("#fontSizeInput").evaluate((input) => {
+    input.value = "11";
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+  });
+  await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(resolve)));
 
   await page.evaluate(() => {
     document.querySelector("#canvasWrap").scrollTop = 0;
@@ -138,6 +161,9 @@ async function runTarget(name, browserType) {
   if (single.canvasVisualWidth > single.stageWidth + tolerance || single.canvasTextLength === 0) {
     failures.push(`single render ${JSON.stringify(single)}`);
   }
+  if (singleZoomedWidth < single.canvasVisualWidth * 1.8) {
+    failures.push(`single font zoom did not respond ${JSON.stringify({ singleZoomedWidth, single })}`);
+  }
   if (continuous.bodyOverflow > tolerance || continuous.wrapOverflow > tolerance || continuous.itemOverflows.some((value) => value > tolerance)) {
     failures.push(`continuous overflow ${JSON.stringify(continuous)}`);
   }
@@ -152,11 +178,14 @@ async function runTarget(name, browserType) {
   if (continuous.loadedItems >= continuous.totalItems || continuous.renderedCharacters === 0) {
     failures.push(`continuous view was not virtualized ${JSON.stringify(continuous)}`);
   }
+  if (continuousZoomedWidth > continuous.itemVisualWidths[0] * 0.65) {
+    failures.push(`continuous font zoom did not respond ${JSON.stringify({ continuousZoomedWidth, continuous })}`);
+  }
   if (restoredTopItem === 0) failures.push("virtualized item did not render again after scrolling back");
   if (consoleErrors.length > 0) failures.push(`console errors ${consoleErrors.join(" | ")}`);
   if (failures.length > 0) throw new Error(`${name}: ${failures.join("; ")}`);
 
-  return { name, single, continuous, restoredTopItem };
+  return { name, single, singleZoomedWidth, continuous, continuousZoomedWidth, restoredTopItem };
 }
 
 (async () => {
