@@ -35,7 +35,7 @@ async function runTarget(name, browserType) {
         Array.from({ length: columns }, (_, column) => ramp[(row + column + offset) % ramp.length]).join("")
       ).join("\n");
     };
-    const columnCounts = [640, 800, 1200];
+    const columnCounts = [640, 800, 1200, 640, 800, 1200, 640, 800, 1200];
     const files = columnCounts.map((columns, index) => ({
       path: `wide-${index}.txt`,
       name: `wide-${index}.txt`,
@@ -75,12 +75,22 @@ async function runTarget(name, browserType) {
 
   await page.click("#pageToggleButton");
   await page.waitForFunction(() => document.querySelectorAll(".page-item[data-loaded='true']").length > 0);
+  const initialLoadedPaths = await page.locator(".page-item[data-loaded='true']")
+    .evaluateAll((items) => items.map((item) => item.dataset.path));
   await page.waitForTimeout(100);
   await page.evaluate(() => {
     const wrap = document.querySelector("#canvasWrap");
     wrap.scrollTop = wrap.scrollHeight;
   });
-  await page.waitForTimeout(100);
+  await page.waitForFunction((paths) => paths.some((path) => {
+    const item = [...document.querySelectorAll(".page-item")]
+      .find((candidate) => candidate.dataset.path === path);
+    return item && item.dataset.loaded !== "true";
+  }), initialLoadedPaths);
+  await page.waitForFunction(() => {
+    const items = [...document.querySelectorAll(".page-item")];
+    return items.at(-1)?.dataset.loaded === "true";
+  });
 
   const continuous = await page.evaluate(() => {
     const wrap = document.querySelector("#canvasWrap");
@@ -97,8 +107,25 @@ async function runTarget(name, browserType) {
       toolbarTop: toolbar.getBoundingClientRect().top,
       toolbarBottom: toolbar.getBoundingClientRect().bottom,
       scrollTop: wrap.scrollTop,
+      loadedItems: loaded.length,
+      totalItems: document.querySelectorAll(".page-item").length,
+      renderedCharacters: loaded.reduce((total, pre) => total + pre.textContent.length, 0),
     };
   });
+
+  await page.evaluate(() => {
+    document.querySelector("#canvasWrap").scrollTop = 0;
+  });
+  await page.waitForFunction((path) => {
+    const item = [...document.querySelectorAll(".page-item")]
+      .find((candidate) => candidate.dataset.path === path);
+    return item?.dataset.loaded === "true" && item.querySelector("pre").textContent.length > 0;
+  }, initialLoadedPaths[0]);
+  const restoredTopItem = await page.evaluate((path) => {
+    const item = [...document.querySelectorAll(".page-item")]
+      .find((candidate) => candidate.dataset.path === path);
+    return item?.querySelector("pre").textContent.length || 0;
+  }, initialLoadedPaths[0]);
 
   await page.screenshot({ path: `/private/tmp/asciivisualizer-${name}-continuous-mobile.png`, fullPage: false });
   await browser.close();
@@ -122,10 +149,14 @@ async function runTarget(name, browserType) {
     failures.push(`toolbar moved ${JSON.stringify({ single, continuous })}`);
   }
   if (continuous.scrollTop <= 0) failures.push(`continuous view did not scroll ${JSON.stringify(continuous)}`);
+  if (continuous.loadedItems >= continuous.totalItems || continuous.renderedCharacters === 0) {
+    failures.push(`continuous view was not virtualized ${JSON.stringify(continuous)}`);
+  }
+  if (restoredTopItem === 0) failures.push("virtualized item did not render again after scrolling back");
   if (consoleErrors.length > 0) failures.push(`console errors ${consoleErrors.join(" | ")}`);
   if (failures.length > 0) throw new Error(`${name}: ${failures.join("; ")}`);
 
-  return { name, single, continuous };
+  return { name, single, continuous, restoredTopItem };
 }
 
 (async () => {
