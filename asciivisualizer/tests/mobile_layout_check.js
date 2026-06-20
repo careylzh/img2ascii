@@ -45,6 +45,28 @@ async function runTarget(name, browserType) {
   await page.fill("#imageUrlInput", "https://example.com/mobile.png");
   await page.click("#convertButton");
   await page.waitForFunction(() => document.querySelector("#downloadButton").disabled === false);
+  await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+  const converterDefaultWidth = await page.locator("#converterOutput")
+    .evaluate((output) => output.getBoundingClientRect().width);
+  await page.locator("#converterFontSizeInput").evaluate((input) => {
+    input.value = "22";
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+  });
+  await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+  const converterZoomedWidth = await page.locator("#converterOutput")
+    .evaluate((output) => output.getBoundingClientRect().width);
+  await page.check("#converterWrapToggle");
+  await page.check("#converterInvertToggle");
+  const converterControlState = await page.evaluate(() => ({
+    whiteSpace: getComputedStyle(document.querySelector("#converterOutput")).whiteSpace,
+    background: getComputedStyle(document.querySelector(".converter-canvas")).backgroundColor,
+  }));
+  await page.uncheck("#converterWrapToggle");
+  await page.uncheck("#converterInvertToggle");
+  await page.locator("#converterFontSizeInput").evaluate((input) => {
+    input.value = "11";
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+  });
   const [download] = await Promise.all([
     page.waitForEvent("download"),
     page.click("#downloadButton"),
@@ -64,6 +86,9 @@ async function runTarget(name, browserType) {
     };
   });
   converter.downloadName = downloadName;
+  converter.defaultWidth = converterDefaultWidth;
+  converter.zoomedWidth = converterZoomedWidth;
+  converter.controlState = converterControlState;
   await page.screenshot({ path: `/private/tmp/asciivisualizer-${name}-converter-mobile.png`, fullPage: false });
   await page.click("#viewerTabButton");
   await page.evaluate(async () => {
@@ -200,6 +225,11 @@ async function runTarget(name, browserType) {
       || converter.filename !== "mobile-80.txt" || converter.previewTop < converter.controlsBottom - tolerance
       || converter.previewTop >= converter.viewportHeight || converter.downloadName !== "mobile-80.txt") {
     failures.push(`converter layout ${JSON.stringify(converter)}`);
+  }
+  if (converter.zoomedWidth < converter.defaultWidth * 1.8
+      || converter.controlState.whiteSpace !== "pre-wrap"
+      || converter.controlState.background !== "rgb(255, 253, 248)") {
+    failures.push(`converter controls ${JSON.stringify(converter)}`);
   }
   if (single.canvasVisualWidth > single.stageWidth + tolerance || single.canvasTextLength === 0) {
     failures.push(`single render ${JSON.stringify(single)}`);
