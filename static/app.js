@@ -390,7 +390,33 @@ function renderPageView() {
     fragment.append(section);
   }
   elements.pageView.append(fragment);
-  observeLazyItems(elements.pageView.querySelectorAll(".page-item"), token, loadPageItem);
+  layoutPagePlaceholders();
+  observePageItems(elements.pageView.querySelectorAll(".page-item"), token);
+}
+
+function observePageItems(items, token) {
+  const itemList = [...items];
+  if (!("IntersectionObserver" in window)) {
+    for (const item of itemList) {
+      item.dataset.virtualVisible = "true";
+      loadPageItem(item, token);
+    }
+    return;
+  }
+
+  const observer = new IntersectionObserver((entries) => {
+    for (const entry of entries) {
+      entry.target.dataset.virtualVisible = String(entry.isIntersecting);
+      if (entry.isIntersecting) loadPageItem(entry.target, token);
+      else unloadPageItem(entry.target);
+    }
+  }, {
+    root: elements.canvasWrap,
+    rootMargin: "400px 0px",
+  });
+
+  state.lazyObserver = observer;
+  for (const item of itemList) observer.observe(item);
 }
 
 function observeLazyItems(items, token, loadItem) {
@@ -432,9 +458,19 @@ function loadGridTile(tile, token) {
 function loadPageItem(item, token) {
   const file = state.files.find((candidate) => candidate.path === item.dataset.path);
   const pre = item.querySelector("pre");
-  if (!file || !pre || item.dataset.loaded === "true") return;
-  item.dataset.loaded = "true";
-  fillPageItem(pre, file, token);
+  if (!file || !pre || item.dataset.loaded === "true" || item.dataset.loading === "true") return;
+  item.dataset.loading = "true";
+  fillPageItem(item, pre, file, token).finally(() => {
+    item.dataset.loading = "false";
+  });
+}
+
+function unloadPageItem(item) {
+  const pre = item.querySelector("pre");
+  if (!pre) return;
+  pre.textContent = "";
+  pre.style.transform = "none";
+  item.dataset.loaded = "false";
 }
 
 async function fillGridTile(pre, file, token) {
@@ -452,15 +488,16 @@ async function fillGridTile(pre, file, token) {
   }
 }
 
-async function fillPageItem(pre, file, token) {
+async function fillPageItem(item, pre, file, token) {
   pre.textContent = "Loading...";
   try {
     const text = await loadFileText(file);
-    if (token !== state.lazyRenderToken) return;
+    if (token !== state.lazyRenderToken || item.dataset.virtualVisible !== "true") return;
     pre.textContent = text;
     fitPageItemText(pre, file);
+    item.dataset.loaded = "true";
   } catch {
-    pre.textContent = "Unable to load";
+    if (item.dataset.virtualVisible === "true") pre.textContent = "Unable to load";
   }
 }
 
@@ -500,6 +537,23 @@ function fitVisiblePageItems() {
     const file = state.files.find((candidate) => candidate.path === item.dataset.path);
     const pre = item.querySelector("pre");
     if (file && pre && item.dataset.loaded === "true") fitPageItemText(pre, file);
+  }
+}
+
+function layoutPagePlaceholders() {
+  if (state.viewMode !== "page") return;
+  for (const item of elements.pageView.querySelectorAll(".page-item")) {
+    if (item.dataset.loaded === "true") continue;
+    const file = state.files.find((candidate) => candidate.path === item.dataset.path);
+    const stage = item.querySelector(".page-stage");
+    if (!file || !stage) continue;
+    const fontSize = 8;
+    const lineHeight = fontSize * 0.9;
+    const characterWidth = fontSize * 0.602;
+    const contentWidth = Math.max(1, file.columns * characterWidth);
+    const availableWidth = Math.max(1, stage.clientWidth);
+    const scale = Math.min(1, availableWidth / contentWidth);
+    stage.style.height = `${Math.max(1, Math.ceil(file.rows * lineHeight * scale))}px`;
   }
 }
 
@@ -604,6 +658,7 @@ window.addEventListener("resize", () => {
   applyCanvasSettings();
   fitVisibleGridTiles();
   fitVisiblePageItems();
+  layoutPagePlaceholders();
 });
 
 document.addEventListener("keydown", (event) => {

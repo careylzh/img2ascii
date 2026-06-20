@@ -395,6 +395,7 @@ body.page-mode .floating-nav {
   display: grid;
   gap: 10px;
   min-width: 0;
+  contain: layout paint style;
 }
 
 .page-item header {
