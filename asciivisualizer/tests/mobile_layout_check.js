@@ -35,14 +35,15 @@ async function runTarget(name, browserType) {
         Array.from({ length: columns }, (_, column) => ramp[(row + column + offset) % ramp.length]).join("")
       ).join("\n");
     };
-    const files = [0, 1, 2].map((index) => ({
+    const columnCounts = [640, 800, 1200];
+    const files = columnCounts.map((columns, index) => ({
       path: `wide-${index}.txt`,
       name: `wide-${index}.txt`,
       folder: "",
-      size: 240 * 90,
+      size: columns * 360,
       modified: 1,
-      rows: 90,
-      columns: 240,
+      rows: 360,
+      columns,
       source: "local",
     }));
     const texts = new Map(files.map((file, index) => [file.path, build(file.columns, file.rows, index)]));
@@ -54,6 +55,7 @@ async function runTarget(name, browserType) {
   const single = await page.evaluate(() => {
     const wrap = document.querySelector("#canvasWrap");
     const canvas = document.querySelector("#asciiCanvas");
+    const stage = document.querySelector("#singleStage");
     const toolbar = document.querySelector(".toolbar");
     return {
       bodyOverflow: document.documentElement.scrollWidth - innerWidth,
@@ -62,6 +64,9 @@ async function runTarget(name, browserType) {
       canvasClientWidth: canvas.clientWidth,
       canvasScrollWidth: canvas.scrollWidth,
       canvasFontSize: getComputedStyle(canvas).fontSize,
+      canvasTextLength: canvas.textContent.length,
+      canvasVisualWidth: canvas.getBoundingClientRect().width,
+      stageWidth: stage.getBoundingClientRect().width,
       toolbarTop: toolbar.getBoundingClientRect().top,
       toolbarBottom: toolbar.getBoundingClientRect().bottom,
     };
@@ -85,6 +90,10 @@ async function runTarget(name, browserType) {
       bodyOverflow: document.documentElement.scrollWidth - innerWidth,
       wrapOverflow: wrap.scrollWidth - wrap.clientWidth,
       itemOverflows: loaded.map((pre) => pre.scrollWidth - pre.clientWidth),
+      itemFontSizes: loaded.map((pre) => getComputedStyle(pre).fontSize),
+      itemTextLengths: loaded.map((pre) => pre.textContent.length),
+      itemVisualWidths: loaded.map((pre) => pre.getBoundingClientRect().width),
+      itemStageWidths: loaded.map((pre) => pre.parentElement.getBoundingClientRect().width),
       toolbarTop: toolbar.getBoundingClientRect().top,
       toolbarBottom: toolbar.getBoundingClientRect().bottom,
       scrollTop: wrap.scrollTop,
@@ -99,13 +108,20 @@ async function runTarget(name, browserType) {
   if (single.bodyOverflow > tolerance || single.wrapOverflow > tolerance || single.contentOverflow > tolerance) {
     failures.push(`single overflow ${JSON.stringify(single)}`);
   }
+  if (single.canvasVisualWidth > single.stageWidth + tolerance || single.canvasTextLength === 0) {
+    failures.push(`single render ${JSON.stringify(single)}`);
+  }
   if (continuous.bodyOverflow > tolerance || continuous.wrapOverflow > tolerance || continuous.itemOverflows.some((value) => value > tolerance)) {
     failures.push(`continuous overflow ${JSON.stringify(continuous)}`);
+  }
+  if (continuous.itemTextLengths.some((value) => value === 0)
+      || continuous.itemVisualWidths.some((value, index) => value > continuous.itemStageWidths[index] + tolerance)) {
+    failures.push(`continuous render ${JSON.stringify(continuous)}`);
   }
   if (single.toolbarTop < -tolerance || continuous.toolbarTop < -tolerance || continuous.toolbarBottom > VIEWPORT.height + tolerance) {
     failures.push(`toolbar moved ${JSON.stringify({ single, continuous })}`);
   }
-  if (continuous.scrollTop <= 0) failures.push("continuous view did not scroll");
+  if (continuous.scrollTop <= 0) failures.push(`continuous view did not scroll ${JSON.stringify(continuous)}`);
   if (consoleErrors.length > 0) failures.push(`console errors ${consoleErrors.join(" | ")}`);
   if (failures.length > 0) throw new Error(`${name}: ${failures.join("; ")}`);
 

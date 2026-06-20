@@ -317,6 +317,11 @@ body.page-mode #asciiCanvas {
   display: none;
 }
 
+body.grid-mode .single-stage,
+body.page-mode .single-stage {
+  display: none;
+}
+
 body.grid-mode .grid-view {
   display: grid;
 }
@@ -415,9 +420,9 @@ body.page-mode .floating-nav {
 }
 
 .page-item pre {
-  width: 100%;
+  width: max-content;
   min-width: 0;
-  max-width: 100%;
+  max-width: none;
   margin: 0;
   overflow: hidden;
   color: #f5f0e6;
@@ -425,6 +430,16 @@ body.page-mode .floating-nav {
   font-size: 8px;
   line-height: 0.9;
   white-space: pre;
+}
+
+.page-stage,
+.single-stage {
+  width: 100%;
+  min-width: 0;
+}
+
+.page-stage {
+  overflow: hidden;
 }
 
 .floating-file-name {
@@ -495,7 +510,8 @@ body.panel-hidden.page-mode .floating-file-name {
 
 #asciiCanvas {
   display: inline-block;
-  max-width: 100%;
+  width: max-content;
+  max-width: none;
   min-width: 100%;
   margin: 0;
   padding: 20px;
