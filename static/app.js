@@ -38,6 +38,7 @@ const elements = {
   wrapToggle: document.querySelector("#wrapToggle"),
   invertToggle: document.querySelector("#invertToggle"),
   canvasWrap: document.querySelector("#canvasWrap"),
+  singleStage: document.querySelector("#singleStage"),
   asciiCanvas: document.querySelector("#asciiCanvas"),
   gridView: document.querySelector("#gridView"),
   pageView: document.querySelector("#pageView"),
@@ -382,7 +383,7 @@ function renderPageView() {
         <strong></strong>
         <span></span>
       </header>
-      <pre></pre>
+      <div class="page-stage"><pre></pre></div>
     `;
     section.querySelector("strong").textContent = fileLabel(file);
     section.querySelector("span").textContent = `${file.rows} rows x ${file.columns} columns`;
@@ -464,7 +465,7 @@ async function fillPageItem(pre, file, token) {
 }
 
 function fitPageItemText(pre, file) {
-  fitTextToWidth(pre, 12);
+  fitTextToWidth(pre, 8);
 }
 
 function thumbnailText(text, pre, fontSize) {
@@ -520,6 +521,9 @@ function applyCanvasSettings() {
   elements.asciiCanvas.style.transform = "none";
   elements.asciiCanvas.style.zoom = "1";
   elements.asciiCanvas.style.marginBottom = "0";
+  elements.asciiCanvas.style.width = elements.wrapToggle.checked ? "100%" : "max-content";
+  elements.singleStage.style.height = "auto";
+  elements.singleStage.style.overflow = "visible";
   if (!elements.fitToggle.checked || elements.wrapToggle.checked) return;
 
   requestAnimationFrame(() => {
@@ -530,13 +534,17 @@ function applyCanvasSettings() {
 }
 
 function fitTextToWidth(pre, baseFontSize, horizontalPadding = 0) {
+  const stage = pre.parentElement;
+  pre.style.transform = "none";
+  pre.style.transformOrigin = "top left";
+  pre.style.width = "max-content";
   pre.style.fontSize = `${baseFontSize}px`;
-  const availableWidth = Math.max(1, pre.clientWidth - horizontalPadding);
+  const availableWidth = Math.max(1, stage.clientWidth - horizontalPadding);
   const contentWidth = Math.max(1, pre.scrollWidth - horizontalPadding);
-  const fittedSize = contentWidth > availableWidth
-    ? baseFontSize * (availableWidth / contentWidth)
-    : baseFontSize;
-  pre.style.fontSize = `${Math.max(0.25, fittedSize)}px`;
+  const scale = Math.min(1, availableWidth / contentWidth);
+  pre.style.transform = `scale(${scale})`;
+  stage.style.height = `${Math.ceil(pre.scrollHeight * scale)}px`;
+  stage.style.overflow = "hidden";
 }
 
 function toggleFilePanel() {
