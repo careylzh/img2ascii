@@ -1,8 +1,13 @@
+from io import BytesIO
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
+from unittest.mock import Mock, patch
 
-from asciivisualizer.server import list_ascii_files, safe_text_path
+from PIL import Image
+
+from asciivisualizer.converter import convert_image_bytes, validate_public_url, validate_width
+from asciivisualizer.server import VisualizerHandler, list_ascii_files, safe_text_path
 
 
 class ServerTests(unittest.TestCase):
@@ -39,6 +44,47 @@ class ServerTests(unittest.TestCase):
 
             with self.assertRaises(ValueError):
                 safe_text_path(root, "image.png")
+
+    def test_convert_png_bytes_uses_ascii_algorithm(self) -> None:
+        buffer = BytesIO()
+        image = Image.new("RGBA", (20, 10), (0, 0, 0, 128))
+        image.save(buffer, format="PNG")
+
+        result = convert_image_bytes(buffer.getvalue(), "sample", 40)
+
+        self.assertEqual(result["filename"], "sample-40.txt")
+        self.assertEqual(result["asciiWidth"], 40)
+        self.assertEqual(result["asciiHeight"], 11)
+        self.assertIn("Source resolution: 20 x 10 pixels", result["text"])
+        self.assertIn("ASCII resolution:  40 x 11 characters", result["text"])
+
+    def test_converter_rejects_private_urls_and_invalid_widths(self) -> None:
+        with self.assertRaises(ValueError):
+            validate_public_url("http://127.0.0.1/image.png")
+        with self.assertRaises(ValueError):
+            validate_width(501)
+
+    def test_convert_url_api_returns_generated_text(self) -> None:
+        expected = {
+            "filename": "sample-120.txt",
+            "text": "ASCII",
+            "sourceWidth": 10,
+            "sourceHeight": 10,
+            "asciiWidth": 120,
+            "asciiHeight": 66,
+        }
+        handler = object.__new__(VisualizerHandler)
+        handler.path = "/api/convert-url"
+        handler.read_json_body = Mock(return_value={"url": "https://example.com/sample.jpg", "width": 120})
+        handler.send_json = Mock()
+        handler.send_error = Mock()
+
+        with patch("asciivisualizer.server.convert_image_url", return_value=expected) as convert:
+            handler.do_POST()
+
+        handler.send_json.assert_called_once_with(expected)
+        handler.send_error.assert_not_called()
+        convert.assert_called_once_with("https://example.com/sample.jpg", 120)
 
 
 if __name__ == "__main__":

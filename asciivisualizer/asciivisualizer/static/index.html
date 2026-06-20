@@ -7,7 +7,13 @@
     <link rel="stylesheet" href="static/styles.css">
   </head>
   <body>
-    <div class="app-shell">
+    <nav class="app-tabs" aria-label="Application sections">
+      <button id="viewerTabButton" class="app-tab" type="button" role="tab" aria-selected="true" aria-controls="viewerTab">Viewer</button>
+      <button id="converterTabButton" class="app-tab" type="button" role="tab" aria-selected="false" aria-controls="converterTab">Convert URL</button>
+    </nav>
+
+    <section id="viewerTab" class="tab-panel" role="tabpanel" aria-labelledby="viewerTabButton">
+      <div class="app-shell">
       <aside class="sidebar">
         <header class="brand">
           <div>
@@ -104,8 +110,45 @@
           <button id="nextButton" class="nav-button" type="button">Next</button>
         </div>
       </main>
-    </div>
+      </div>
+    </section>
+
+    <section id="converterTab" class="tab-panel converter-workspace" role="tabpanel" aria-labelledby="converterTabButton" hidden>
+      <aside class="converter-controls">
+        <header>
+          <h1>Image to ASCII</h1>
+          <p>PNG and JPEG from a public image URL</p>
+        </header>
+        <form id="converterForm">
+          <label for="imageUrlInput">Image URL</label>
+          <input id="imageUrlInput" type="url" inputmode="url" placeholder="https://example.com/image.jpg" autocomplete="url" required>
+
+          <div class="converter-width-row">
+            <label for="asciiWidthInput">Output width</label>
+            <output id="asciiWidthValue" for="asciiWidthInput">120</output>
+          </div>
+          <input id="asciiWidthInput" type="range" min="20" max="500" value="120">
+
+          <button id="convertButton" class="primary-button" type="submit">Convert</button>
+          <button id="downloadButton" class="text-button" type="button" disabled>Download .txt</button>
+          <p id="converterStatus" class="converter-status" role="status"></p>
+        </form>
+      </aside>
+
+      <main class="converter-preview">
+        <header>
+          <div>
+            <h2 id="converterFilename">No conversion yet</h2>
+            <p id="converterMeta">ASCII preview</p>
+          </div>
+        </header>
+        <div class="converter-canvas">
+          <pre id="converterOutput" aria-live="polite"></pre>
+        </div>
+      </main>
+    </section>
 
     <script src="static/app.js"></script>
+    <script src="static/converter.js"></script>
   </body>
 </html>

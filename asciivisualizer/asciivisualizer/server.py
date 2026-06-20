@@ -11,6 +11,8 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import parse_qs, unquote, urlparse
 
+from .converter import convert_image_url
+
 
 STATIC_DIR = Path(__file__).with_name("static")
 
@@ -131,12 +133,15 @@ class VisualizerHandler(BaseHTTPRequestHandler):
 
     def do_POST(self) -> None:
         parsed = urlparse(self.path)
-        if parsed.path != "/api/folder":
+        if parsed.path not in {"/api/folder", "/api/convert-url"}:
             self.send_error(HTTPStatus.NOT_FOUND, "Not found")
             return
 
         try:
             payload = self.read_json_body()
+            if parsed.path == "/api/convert-url":
+                self.send_json(convert_image_url(payload.get("url"), payload.get("width", 120)))
+                return
             folder = payload.get("folder", "")
             if not isinstance(folder, str):
                 raise ValueError("Folder must be a string.")

@@ -28,6 +28,44 @@ async function runTarget(name, browserType) {
   });
 
   await page.goto(APP_URL, { waitUntil: "networkidle" });
+  await page.route("**/api/convert-url", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        filename: "mobile-80.txt",
+        text: "Source file: mobile.png\nASCII resolution:  80 x 2 characters\n\n@%#*+=-:. ".repeat(16),
+        sourceWidth: 320,
+        sourceHeight: 180,
+        asciiWidth: 80,
+        asciiHeight: 24,
+      }),
+    });
+  });
+  await page.click("#converterTabButton");
+  await page.fill("#imageUrlInput", "https://example.com/mobile.png");
+  await page.click("#convertButton");
+  await page.waitForFunction(() => document.querySelector("#downloadButton").disabled === false);
+  const [download] = await Promise.all([
+    page.waitForEvent("download"),
+    page.click("#downloadButton"),
+  ]);
+  const downloadName = download.suggestedFilename();
+  const converter = await page.evaluate(() => {
+    const controls = document.querySelector(".converter-controls").getBoundingClientRect();
+    const preview = document.querySelector(".converter-preview").getBoundingClientRect();
+    return {
+      bodyOverflow: document.documentElement.scrollWidth - innerWidth,
+      outputLength: document.querySelector("#converterOutput").textContent.length,
+      filename: document.querySelector("#converterFilename").textContent,
+      downloadEnabled: !document.querySelector("#downloadButton").disabled,
+      controlsBottom: controls.bottom,
+      previewTop: preview.top,
+      viewportHeight: innerHeight,
+    };
+  });
+  converter.downloadName = downloadName;
+  await page.screenshot({ path: `/private/tmp/asciivisualizer-${name}-converter-mobile.png`, fullPage: false });
+  await page.click("#viewerTabButton");
   await page.evaluate(async () => {
     const build = (columns, rows, offset) => {
       const ramp = "@%#*+=-:. ";
@@ -158,6 +196,11 @@ async function runTarget(name, browserType) {
   if (single.bodyOverflow > tolerance || single.wrapOverflow > tolerance || single.contentOverflow > tolerance) {
     failures.push(`single overflow ${JSON.stringify(single)}`);
   }
+  if (converter.bodyOverflow > tolerance || converter.outputLength === 0 || !converter.downloadEnabled
+      || converter.filename !== "mobile-80.txt" || converter.previewTop < converter.controlsBottom - tolerance
+      || converter.previewTop >= converter.viewportHeight || converter.downloadName !== "mobile-80.txt") {
+    failures.push(`converter layout ${JSON.stringify(converter)}`);
+  }
   if (single.canvasVisualWidth > single.stageWidth + tolerance || single.canvasTextLength === 0) {
     failures.push(`single render ${JSON.stringify(single)}`);
   }
@@ -185,7 +228,7 @@ async function runTarget(name, browserType) {
   if (consoleErrors.length > 0) failures.push(`console errors ${consoleErrors.join(" | ")}`);
   if (failures.length > 0) throw new Error(`${name}: ${failures.join("; ")}`);
 
-  return { name, single, singleZoomedWidth, continuous, continuousZoomedWidth, restoredTopItem };
+  return { name, converter, single, singleZoomedWidth, continuous, continuousZoomedWidth, restoredTopItem };
 }
 
 (async () => {

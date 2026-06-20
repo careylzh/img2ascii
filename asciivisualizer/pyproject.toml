@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "Local web-based visualizer for ASCII art text files."
 requires-python = ">=3.10"
 readme = "README.md"
+dependencies = ["Pillow"]
 
 [project.scripts]
 asciivisualizer = "asciivisualizer.server:main"
