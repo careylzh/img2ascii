@@ -12,6 +12,13 @@ const converterElements = {
   status: document.querySelector("#converterStatus"),
   filename: document.querySelector("#converterFilename"),
   meta: document.querySelector("#converterMeta"),
+  fontSizeInput: document.querySelector("#converterFontSizeInput"),
+  lineHeightInput: document.querySelector("#converterLineHeightInput"),
+  fitToggle: document.querySelector("#converterFitToggle"),
+  wrapToggle: document.querySelector("#converterWrapToggle"),
+  invertToggle: document.querySelector("#converterInvertToggle"),
+  canvas: document.querySelector(".converter-canvas"),
+  stage: document.querySelector("#converterStage"),
   output: document.querySelector("#converterOutput"),
 };
 
@@ -34,6 +41,33 @@ function setConversionPending(pending) {
 function resetDownload() {
   convertedFile = null;
   converterElements.downloadButton.disabled = true;
+}
+
+function applyConverterSettings() {
+  const fontSize = Number(converterElements.fontSizeInput.value);
+  const lineHeight = Number(converterElements.lineHeightInput.value) / 100;
+  const fitted = converterElements.fitToggle.checked && !converterElements.wrapToggle.checked;
+  converterElements.output.style.fontSize = `${fitted ? 11 : fontSize}px`;
+  converterElements.output.style.lineHeight = String(lineHeight);
+  converterElements.output.style.transform = "none";
+  converterElements.output.style.width = converterElements.wrapToggle.checked ? "100%" : "max-content";
+  converterElements.stage.style.height = "auto";
+  converterElements.stage.style.overflow = "visible";
+  converterElements.converterTab.classList.toggle("converter-wrap", converterElements.wrapToggle.checked);
+  converterElements.converterTab.classList.toggle("converter-inverted", converterElements.invertToggle.checked);
+  if (!fitted || !converterElements.output.textContent) return;
+
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      const availableWidth = Math.max(1, converterElements.stage.clientWidth - 40);
+      const contentWidth = Math.max(1, converterElements.output.scrollWidth - 40);
+      const fittedScale = Math.min(1, availableWidth / contentWidth);
+      const scale = fittedScale * (fontSize / 11);
+      converterElements.output.style.transform = `scale(${scale})`;
+      converterElements.stage.style.height = `${Math.ceil(converterElements.output.scrollHeight * scale)}px`;
+      converterElements.stage.style.overflow = scale > fittedScale ? "visible" : "hidden";
+    });
+  });
 }
 
 async function convertImageUrl(event) {
@@ -62,6 +96,7 @@ async function convertImageUrl(event) {
     converterElements.filename.textContent = result.filename;
     converterElements.meta.textContent = `${result.sourceWidth} x ${result.sourceHeight} pixels · ${result.asciiWidth} x ${result.asciiHeight} characters`;
     converterElements.output.textContent = result.text;
+    applyConverterSettings();
     converterElements.downloadButton.disabled = false;
     converterElements.status.textContent = "Conversion complete.";
   } catch (error) {
@@ -86,5 +121,11 @@ converterElements.converterTabButton.addEventListener("click", () => selectAppTa
 converterElements.widthInput.addEventListener("input", () => {
   converterElements.widthValue.value = converterElements.widthInput.value;
 });
+converterElements.fontSizeInput.addEventListener("input", applyConverterSettings);
+converterElements.lineHeightInput.addEventListener("input", applyConverterSettings);
+converterElements.fitToggle.addEventListener("change", applyConverterSettings);
+converterElements.wrapToggle.addEventListener("change", applyConverterSettings);
+converterElements.invertToggle.addEventListener("change", applyConverterSettings);
 converterElements.form.addEventListener("submit", convertImageUrl);
 converterElements.downloadButton.addEventListener("click", downloadConversion);
+window.addEventListener("resize", applyConverterSettings);

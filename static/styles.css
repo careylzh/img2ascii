@@ -180,9 +180,21 @@ select {
 }
 
 .converter-preview > header {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) auto;
+  align-items: center;
+  gap: 14px;
   padding: 16px 18px;
   border-bottom: 1px solid var(--line);
   background: #191919;
+}
+
+.converter-preview-heading {
+  min-width: 0;
+}
+
+.converter-display-controls {
+  min-width: 0;
 }
 
 .converter-preview h2 {
@@ -207,6 +219,25 @@ select {
   color: #f5f0e6;
   font: 11px/1 "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
   white-space: pre;
+  transform-origin: top left;
+}
+
+.converter-stage {
+  width: 100%;
+  min-width: 0;
+}
+
+.converter-wrap #converterOutput {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.converter-inverted .converter-canvas {
+  background: #fffdf8;
+}
+
+.converter-inverted #converterOutput {
+  color: #111111;
 }
 
 body.panel-hidden .app-shell {
@@ -777,6 +808,14 @@ body.wrap-enabled #asciiCanvas {
   .converter-controls .primary-button,
   .converter-controls .text-button {
     min-width: 0;
+  }
+
+  .converter-preview > header {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .converter-display-controls {
+    justify-content: flex-start;
   }
 
   .app-shell {

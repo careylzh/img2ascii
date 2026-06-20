@@ -137,13 +137,37 @@
 
       <main class="converter-preview">
         <header>
-          <div>
+          <div class="converter-preview-heading">
             <h2 id="converterFilename">No conversion yet</h2>
             <p id="converterMeta">ASCII preview</p>
           </div>
+          <div class="controls converter-display-controls">
+            <label>
+              Font
+              <input id="converterFontSizeInput" type="range" min="6" max="28" value="11">
+            </label>
+            <label>
+              Line
+              <input id="converterLineHeightInput" type="range" min="70" max="160" value="100">
+            </label>
+            <label class="check-control">
+              <input id="converterFitToggle" type="checkbox" checked>
+              Fit
+            </label>
+            <label class="check-control">
+              <input id="converterWrapToggle" type="checkbox">
+              Wrap
+            </label>
+            <label class="check-control">
+              <input id="converterInvertToggle" type="checkbox">
+              Invert
+            </label>
+          </div>
         </header>
         <div class="converter-canvas">
-          <pre id="converterOutput" aria-live="polite"></pre>
+          <div id="converterStage" class="converter-stage">
+            <pre id="converterOutput" aria-live="polite"></pre>
+          </div>
         </div>
       </main>
     </section>
