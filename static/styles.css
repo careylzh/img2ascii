@@ -26,6 +26,7 @@ body {
   background: var(--bg);
   color: var(--text);
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  overflow: hidden;
 }
 
 button,
@@ -38,7 +39,9 @@ select {
   display: grid;
   grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
   height: 100vh;
+  height: 100dvh;
   min-height: 0;
+  overflow: hidden;
 }
 
 body.panel-hidden .app-shell {
@@ -229,14 +232,17 @@ body.panel-hidden .sidebar {
   grid-template-rows: auto minmax(0, 1fr);
   min-width: 0;
   min-height: 0;
+  overflow: hidden;
 }
 
 .toolbar {
+  position: sticky;
+  top: 0;
   display: grid;
   grid-template-columns: auto minmax(220px, 1fr) auto;
   gap: 14px;
   align-items: center;
-  padding: 14px 18px;
+  padding: max(14px, env(safe-area-inset-top)) 18px 14px;
   border-bottom: 1px solid var(--line);
   background: #191919;
   z-index: 4;
@@ -291,6 +297,8 @@ body.panel-hidden .toolbar .file-heading {
   min-width: 0;
   min-height: 0;
   overflow: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
   background: #0f0f0e;
 }
 
@@ -407,7 +415,9 @@ body.page-mode .floating-nav {
 }
 
 .page-item pre {
+  width: 100%;
   min-width: 0;
+  max-width: 100%;
   margin: 0;
   overflow: hidden;
   color: #f5f0e6;
@@ -441,6 +451,11 @@ body.page-mode .floating-nav {
 
 body.panel-hidden .floating-file-name {
   display: block;
+}
+
+body.panel-hidden.grid-mode .floating-file-name,
+body.panel-hidden.page-mode .floating-file-name {
+  display: none;
 }
 
 .floating-nav {
@@ -480,6 +495,7 @@ body.panel-hidden .floating-file-name {
 
 #asciiCanvas {
   display: inline-block;
+  max-width: 100%;
   min-width: 100%;
   margin: 0;
   padding: 20px;
@@ -560,6 +576,8 @@ body.wrap-enabled #asciiCanvas {
   .toolbar {
     grid-template-columns: auto minmax(0, 1fr);
     align-items: start;
+    padding-right: max(12px, env(safe-area-inset-right));
+    padding-left: max(12px, env(safe-area-inset-left));
   }
 
   .toolbar .controls {

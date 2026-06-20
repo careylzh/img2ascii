@@ -464,11 +464,7 @@ async function fillPageItem(pre, file, token) {
 }
 
 function fitPageItemText(pre, file) {
-  const availableWidth = pre.clientWidth;
-  const columns = Math.max(file.columns || 1, 1);
-  const widthFit = availableWidth / (columns * 0.62);
-  const fontSize = Math.max(1, Math.min(12, widthFit));
-  pre.style.fontSize = `${fontSize}px`;
+  fitTextToWidth(pre, 12);
 }
 
 function thumbnailText(text, pre, fontSize) {
@@ -521,23 +517,26 @@ function applyCanvasSettings() {
   document.body.classList.toggle("wrap-enabled", elements.wrapToggle.checked);
   document.body.classList.toggle("inverted", elements.invertToggle.checked);
 
-  elements.asciiCanvas.style.transform = "scale(1)";
+  elements.asciiCanvas.style.transform = "none";
   elements.asciiCanvas.style.zoom = "1";
   elements.asciiCanvas.style.marginBottom = "0";
   if (!elements.fitToggle.checked || elements.wrapToggle.checked) return;
 
   requestAnimationFrame(() => {
-    const available = elements.canvasWrap.clientWidth - 40;
-    const contentWidth = elements.asciiCanvas.scrollWidth - 40;
-    const scale = contentWidth > 0 ? Math.min(1, available / contentWidth) : 1;
-    if ("zoom" in elements.asciiCanvas.style) {
-      elements.asciiCanvas.style.zoom = String(scale);
-      elements.asciiCanvas.style.transform = "none";
-    } else {
-      elements.asciiCanvas.style.transform = `scale(${scale})`;
-      elements.asciiCanvas.style.marginBottom = `-${elements.asciiCanvas.offsetHeight * (1 - scale)}px`;
-    }
+    requestAnimationFrame(() => {
+      fitTextToWidth(elements.asciiCanvas, state.fontSize, 40);
+    });
   });
+}
+
+function fitTextToWidth(pre, baseFontSize, horizontalPadding = 0) {
+  pre.style.fontSize = `${baseFontSize}px`;
+  const availableWidth = Math.max(1, pre.clientWidth - horizontalPadding);
+  const contentWidth = Math.max(1, pre.scrollWidth - horizontalPadding);
+  const fittedSize = contentWidth > availableWidth
+    ? baseFontSize * (availableWidth / contentWidth)
+    : baseFontSize;
+  pre.style.fontSize = `${Math.max(0.25, fittedSize)}px`;
 }
 
 function toggleFilePanel() {
