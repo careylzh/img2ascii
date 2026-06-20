@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>ASCII Visualizer</title>
-    <link rel="stylesheet" href="/static/styles.css">
+    <link rel="stylesheet" href="static/styles.css">
   </head>
   <body>
     <div class="app-shell">
@@ -24,7 +24,6 @@
           <div class="folder-row">
             <input id="folderInput" type="text" placeholder="/path/to/ascii-folder" autocomplete="off">
             <button id="browseFolderButton" class="text-button" type="button">Browse</button>
-            <button id="loadFolderButton" class="text-button" type="submit">Load</button>
           </div>
           <input id="directoryInput" class="visually-hidden" type="file" webkitdirectory directory multiple>
           <p id="folderStatus" role="status"></p>
@@ -49,9 +48,17 @@
 
       <main class="viewer-pane">
         <div class="toolbar">
-          <button id="panelToggleButton" class="icon-button" type="button" title="Hide file panel" aria-label="Hide file panel" aria-pressed="false">
-            <span aria-hidden="true">☰</span>
-          </button>
+          <div class="view-buttons">
+            <button id="panelToggleButton" class="icon-button" type="button" title="Hide file panel" aria-label="Hide file panel" aria-pressed="false">
+              <span aria-hidden="true">☰</span>
+            </button>
+            <button id="gridToggleButton" class="icon-button" type="button" title="Show grid view" aria-label="Show grid view" aria-pressed="false">
+              <span aria-hidden="true">▦</span>
+            </button>
+            <button id="pageToggleButton" class="icon-button" type="button" title="Show continuous view" aria-label="Show continuous view" aria-pressed="false">
+              <span aria-hidden="true">☷</span>
+            </button>
+          </div>
 
           <div class="file-heading">
             <h2 id="activeName">No file selected</h2>
@@ -86,6 +93,8 @@
 
         <section class="canvas-wrap" id="canvasWrap">
           <pre id="asciiCanvas" aria-live="polite">Select a .txt file to visualize it here.</pre>
+          <div id="gridView" class="grid-view" aria-label="ASCII grid view"></div>
+          <div id="pageView" class="page-view" aria-label="Continuous ASCII view"></div>
         </section>
 
         <div class="floating-nav" aria-label="File navigation">
@@ -95,6 +104,6 @@
       </main>
     </div>
 
-    <script src="/static/app.js"></script>
+    <script src="static/app.js"></script>
   </body>
 </html>
